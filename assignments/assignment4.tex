@@ -1,0 +1,429 @@
+\documentclass[11pt,a4paper,english]{article}\usepackage[]{graphicx}\usepackage[]{xcolor}
+% maxwidth is the original width if it is less than linewidth
+% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlsng}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hldef}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+\let\hlipl\hlkwb
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+
+\usepackage{xcolor}
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+
+% Normal latex T1-fonts
+\usepackage[T1]{fontenc}
+
+% Figures
+\usepackage{graphicx}
+
+ % AMS-stuff
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{amsbsy}
+
+ % Misc
+\usepackage{verbatim}
+\usepackage{url}
+
+% Page size
+\addtolength{\hoffset}{-1cm}
+\addtolength{\textwidth}{2cm}
+\addtolength{\voffset}{-1cm}
+\addtolength{\textheight}{2cm}
+
+% Paragraph
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
+
+% Horizontal line
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+% No page numbers
+\pagestyle{empty}
+
+% New commands:
+\DeclareMathOperator{\var}{var}
+\DeclareMathOperator{\cov}{cov}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\begin{document}
+%\SweaveOpts{concordance=TRUE}
+
+\begin{titlepage}
+
+\center
+\textsc{\LARGE SIRCSS-CTA}\\[1.5cm] % Name of your university/college
+
+\HRule \\[0.4cm]
+{ \huge \bfseries Lab 4: Large Language Models}\\[0.4cm] % Title of your document
+\HRule \\[1.5cm]
+
+\vfill
+
+\end{titlepage}
+
+
+% General Knitr options
+% (this cannot be input since the file runs knitr before LaTeX)
+
+
+
+\section{Few-shot classification with large language models}
+
+In-context learning is the idea to use large language models to complete tasks in a few-shot or zero-shot way. In this assignment, we will classify Swedish political manifesto quotes as belonging to either the Social Democratic party (\texttt{Socialdemokraterna}) or the Conservative party (\texttt{Moderaterna}).
+
+The goal is to use an LLM as a classifier through an API from R, store the outputs in a structured format, and evaluate the classifier properly.
+
+\subsection{Install packages}
+
+Install the packages used in this assignment. The \texttt{uuml} package contains the course data and is installed from GitHub.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{install.packages}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"ellmer"}\hldef{,} \hlsng{"caret"}\hldef{,} \hlsng{"remotes"}\hldef{,} \hlsng{"usethis"}\hldef{))}
+\hldef{remotes}\hlopt{::}\hlkwd{install_github}\hldef{(}\hlsng{"MansMeg/IntroML"}\hldef{,} \hlkwc{subdir} \hldef{=} \hlsng{"rpackage"}\hldef{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+
+\subsection{OpenAI API key}
+
+For this assignment, you need an OpenAI developer account and an API key [here](https://platform.openai.com/api-keys). A ChatGPT Plus subscription is not the same thing as API access. This will cost you approx \$6. Feel free to try other LLMs instead, through \texttt{ellmer}.
+
+\textcolor{red}{\emph{Warning:}} Never write your API key directly in your script, report, or any file that may be uploaded to a public repository. Store it as an environment variable instead.
+
+Open your \texttt{.Renviron} file:
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{usethis}\hlopt{::}\hlkwd{edit_r_environ}\hldef{()}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+Add the following line to the file, replacing the placeholder with your actual key:
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{OPENAI_API_KEY}\hlkwb{=}\hlsng{"[YOUR KEY GOES HERE]"}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+Save the file and restart R. You can then check that R can see the key:
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{Sys.getenv}\hldef{(}\hlsng{"OPENAI_API_KEY"}\hldef{)} \hlopt{!=} \hlsng{""}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\subsection{First API call}
+
+We will use \texttt{gpt-5.4-mini} for development and the main classification task. The argument \texttt{echo = "none"} means that \texttt{ellmer} does not automatically print model output while it is generated. This is useful when we run many API calls. For a single test call, we can override this with \texttt{echo = "output"} so that the answer is printed.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hldef{(ellmer)}
+
+\hldef{chat_test} \hlkwb{<-} \hlkwd{chat_openai}\hldef{(}
+  \hlkwc{model} \hldef{=} \hlsng{"gpt-5.4-mini"}\hldef{,}
+  \hlkwc{system_prompt} \hldef{=} \hlsng{"You are a helpful assistant."}\hldef{,}
+  \hlkwc{params} \hldef{=} \hlkwd{params}\hldef{(}\hlkwc{temperature} \hldef{=} \hlnum{0}\hldef{),}
+  \hlkwc{echo} \hldef{=} \hlsng{"none"}
+\hldef{)}
+
+\hldef{chat_test}\hlopt{$}\hlkwd{chat}\hldef{(}
+  \hlsng{"Who was Gustav Vasa? Answer in one sentence."}\hldef{,}
+  \hlkwc{echo} \hldef{=} \hlsng{"output"}
+\hldef{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\emph{Note!} API calls cost money. Start with a very small subset to check that your prompt, schema, and evaluation code work before running the model on more observations.
+
+\subsection{Data}
+
+\emph{Note!} This data is included in \texttt{uuml} version 0.4.0 and later.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hldef{(uuml)}
+\hlkwd{library}\hldef{(caret)}
+
+\hlkwd{data}\hldef{(}\hlsng{"pc_test"}\hldef{)}
+\hlkwd{data}\hldef{(}\hlsng{"pc_train"}\hldef{)}
+
+\hldef{pc_train}\hlopt{$}\hldef{party} \hlkwb{<-} \hlkwd{as.character}\hldef{(pc_train}\hlopt{$}\hldef{party)}
+\hldef{pc_test}\hlopt{$}\hldef{party} \hlkwb{<-} \hlkwd{as.character}\hldef{(pc_test}\hlopt{$}\hldef{party)}
+
+\hldef{pc_train}\hlopt{$}\hldef{party[pc_train}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"S"}\hldef{]} \hlkwb{<-} \hlsng{"Socialdemokraterna"}
+\hldef{pc_train}\hlopt{$}\hldef{party[pc_train}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"M"}\hldef{]} \hlkwb{<-} \hlsng{"Moderaterna"}
+\hldef{pc_test}\hlopt{$}\hldef{party[pc_test}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"S"}\hldef{]} \hlkwb{<-} \hlsng{"Socialdemokraterna"}
+\hldef{pc_test}\hlopt{$}\hldef{party[pc_test}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"M"}\hldef{]} \hlkwb{<-} \hlsng{"Moderaterna"}
+
+\hlkwd{table}\hldef{(pc_train}\hlopt{$}\hldef{party)}
+\hlkwd{table}\hldef{(pc_test}\hlopt{$}\hldef{party)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\subsection{Structured outputs}
+
+Do not parse free text answers from the model. Instead, require a structured output with three fields: the predicted party, a confidence score, and a short reason.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{party_labels} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlsng{"Socialdemokraterna"}\hldef{,} \hlsng{"Moderaterna"}\hldef{)}
+
+\hlcom{# This tells the model exactly what fields to return.}
+\hldef{answer_format} \hlkwb{<-} \hlkwd{type_object}\hldef{(}
+  \hlsng{"Classification of one Swedish political manifesto quote."}\hldef{,}
+  \hlkwc{party} \hldef{=} \hlkwd{type_enum}\hldef{(}
+    \hldef{party_labels,}
+    \hlsng{"Predicted party."}
+  \hldef{),}
+  \hlkwc{confidence} \hldef{=} \hlkwd{type_number}\hldef{(}\hlsng{"Confidence from 0 to 1."}\hldef{),}
+  \hlkwc{reason} \hldef{=} \hlkwd{type_string}\hldef{(}\hlsng{"Very short reason for the classification."}\hldef{)}
+\hldef{)}
+
+\hldef{chat_mini} \hlkwb{<-} \hlkwd{chat_openai}\hldef{(}
+  \hlkwc{model} \hldef{=} \hlsng{"gpt-5.4-mini"}\hldef{,}
+  \hlkwc{system_prompt} \hldef{=} \hlsng{"You classify Swedish political manifesto quotes."}\hldef{,}
+  \hlkwc{params} \hldef{=} \hlkwd{params}\hldef{(}\hlkwc{temperature} \hldef{=} \hlnum{0}\hldef{),}
+  \hlkwc{echo} \hldef{=} \hlsng{"none"}
+\hldef{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\subsection{Few-shot prompt}
+
+Create a small, balanced set of examples from the training data and use them to build a few-shot classification prompt.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{set.seed}\hldef{(}\hlnum{123}\hldef{)}
+
+\hldef{s_examples} \hlkwb{<-} \hldef{pc_train[pc_train}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"Socialdemokraterna"}\hldef{, ]}
+\hldef{m_examples} \hlkwb{<-} \hldef{pc_train[pc_train}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"Moderaterna"}\hldef{, ]}
+
+\hldef{s_examples} \hlkwb{<-} \hldef{s_examples[}\hlkwd{sample}\hldef{(}\hlkwd{nrow}\hldef{(s_examples),} \hlnum{3}\hldef{), ]}
+\hldef{m_examples} \hlkwb{<-} \hldef{m_examples[}\hlkwd{sample}\hldef{(}\hlkwd{nrow}\hldef{(m_examples),} \hlnum{3}\hldef{), ]}
+
+\hldef{examples} \hlkwb{<-} \hlkwd{rbind}\hldef{(s_examples, m_examples)}
+
+\hldef{examples_text} \hlkwb{<-} \hlkwd{paste0}\hldef{(}
+  \hlsng{"Quote: "}\hldef{, examples}\hlopt{$}\hldef{quote,}
+  \hlsng{"\textbackslash{}nParty: "}\hldef{, examples}\hlopt{$}\hldef{party,}
+  \hlkwc{collapse} \hldef{=} \hlsng{"\textbackslash{}n\textbackslash{}n"}
+\hldef{)}
+
+\hlkwd{cat}\hldef{(examples_text)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\subsection{Small pilot run}
+
+Before classifying many quotes, run the model on 10 test quotes. Inspect the returned \texttt{party}, \texttt{confidence}, and \texttt{reason} fields. If the output looks wrong, revise your prompt before continuing.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{pc_pilot} \hlkwb{<-} \hldef{pc_test[}\hlkwd{sample}\hldef{(}\hlkwd{nrow}\hldef{(pc_test),} \hlnum{10}\hldef{), ]}
+
+\hldef{pilot_prompts} \hlkwb{<-} \hlkwd{paste0}\hldef{(}
+  \hlsng{"Classify the Swedish political manifesto quote.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Allowed labels: Socialdemokraterna or Moderaterna.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Examples:\textbackslash{}n\textbackslash{}n"}\hldef{, examples_text,} \hlsng{"\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Quote to classify:\textbackslash{}n\textbackslash{}n"}\hldef{, pc_pilot}\hlopt{$}\hldef{quote}
+\hldef{)}
+
+\hldef{pilot_predictions} \hlkwb{<-} \hlkwd{parallel_chat_structured}\hldef{(}
+  \hldef{chat_mini,}
+  \hldef{pilot_prompts,}
+  \hlkwc{type} \hldef{= answer_format,}
+  \hlkwc{max_active} \hldef{=} \hlnum{2}
+\hldef{)}
+
+\hlkwd{names}\hldef{(pilot_predictions)[}\hlkwd{names}\hldef{(pilot_predictions)} \hlopt{==} \hlsng{"party"}\hldef{]} \hlkwb{<-} \hlsng{"prediction"}
+\hldef{pilot_results} \hlkwb{<-} \hlkwd{cbind}\hldef{(pc_pilot, pilot_predictions)}
+\hldef{pilot_results[,} \hlkwd{c}\hldef{(}\hlsng{"quote"}\hldef{,} \hlsng{"party"}\hldef{,} \hlsng{"prediction"}\hldef{,} \hlsng{"confidence"}\hldef{,} \hlsng{"reason"}\hldef{)]}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\subsection{Evaluate the mini model}
+
+After your pilot works, classify the full test set or a clearly justified subset of the test set. The \texttt{caret} package computes the confusion matrix and common classification metrics for us.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{test_prompts} \hlkwb{<-} \hlkwd{paste0}\hldef{(}
+  \hlsng{"Classify the Swedish political manifesto quote.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Allowed labels: Socialdemokraterna or Moderaterna.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Examples:\textbackslash{}n\textbackslash{}n"}\hldef{, examples_text,} \hlsng{"\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Quote to classify:\textbackslash{}n\textbackslash{}n"}\hldef{, pc_test}\hlopt{$}\hldef{quote}
+\hldef{)}
+
+\hldef{mini_predictions} \hlkwb{<-} \hlkwd{parallel_chat_structured}\hldef{(}
+  \hldef{chat_mini,}
+  \hldef{test_prompts,}
+  \hlkwc{type} \hldef{= answer_format,}
+  \hlkwc{max_active} \hldef{=} \hlnum{2}
+\hldef{)}
+
+\hlkwd{names}\hldef{(mini_predictions)[}\hlkwd{names}\hldef{(mini_predictions)} \hlopt{==} \hlsng{"party"}\hldef{]} \hlkwb{<-} \hlsng{"prediction"}
+\hldef{mini_results} \hlkwb{<-} \hlkwd{cbind}\hldef{(pc_test, mini_predictions)}
+
+\hlkwd{confusionMatrix}\hldef{(}
+  \hlkwc{data} \hldef{=} \hlkwd{factor}\hldef{(mini_results}\hlopt{$}\hldef{prediction,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{reference} \hldef{=} \hlkwd{factor}\hldef{(mini_results}\hlopt{$}\hldef{party,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{mode} \hldef{=} \hlsng{"everything"}
+\hldef{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\subsection{Compare with GPT-5.5}
+
+Use the same prompt and the same evaluation cases to compare \texttt{gpt-5.4-mini} with \texttt{gpt-5.5}. If API costs are a concern, compare both models on a random subset of at least 30 test quotes and state clearly that you used a subset.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{chat_55} \hlkwb{<-} \hlkwd{chat_openai}\hldef{(}
+  \hlkwc{model} \hldef{=} \hlsng{"gpt-5.5"}\hldef{,}
+  \hlkwc{system_prompt} \hldef{=} \hlsng{"You classify Swedish political manifesto quotes."}\hldef{,}
+  \hlkwc{params} \hldef{=} \hlkwd{params}\hldef{(}\hlkwc{temperature} \hldef{=} \hlnum{0}\hldef{),}
+  \hlkwc{echo} \hldef{=} \hlsng{"none"}
+\hldef{)}
+
+\hldef{pc_compare} \hlkwb{<-} \hldef{pc_test[}\hlkwd{sample}\hldef{(}\hlkwd{nrow}\hldef{(pc_test),} \hlnum{30}\hldef{), ]}
+
+\hldef{comparison_prompts} \hlkwb{<-} \hlkwd{paste0}\hldef{(}
+  \hlsng{"Classify the Swedish political manifesto quote.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Allowed labels: Socialdemokraterna or Moderaterna.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Examples:\textbackslash{}n\textbackslash{}n"}\hldef{, examples_text,} \hlsng{"\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Quote to classify:\textbackslash{}n\textbackslash{}n"}\hldef{, pc_compare}\hlopt{$}\hldef{quote}
+\hldef{)}
+
+\hldef{mini_compare} \hlkwb{<-} \hlkwd{parallel_chat_structured}\hldef{(}
+  \hldef{chat_mini,}
+  \hldef{comparison_prompts,}
+  \hlkwc{type} \hldef{= answer_format,}
+  \hlkwc{max_active} \hldef{=} \hlnum{2}
+\hldef{)}
+
+\hldef{gpt55_compare} \hlkwb{<-} \hlkwd{parallel_chat_structured}\hldef{(}
+  \hldef{chat_55,}
+  \hldef{comparison_prompts,}
+  \hlkwc{type} \hldef{= answer_format,}
+  \hlkwc{max_active} \hldef{=} \hlnum{2}
+\hldef{)}
+
+\hlkwd{names}\hldef{(mini_compare)[}\hlkwd{names}\hldef{(mini_compare)} \hlopt{==} \hlsng{"party"}\hldef{]} \hlkwb{<-} \hlsng{"prediction"}
+\hlkwd{names}\hldef{(gpt55_compare)[}\hlkwd{names}\hldef{(gpt55_compare)} \hlopt{==} \hlsng{"party"}\hldef{]} \hlkwb{<-} \hlsng{"prediction"}
+
+\hlkwd{confusionMatrix}\hldef{(}
+  \hlkwc{data} \hldef{=} \hlkwd{factor}\hldef{(mini_compare}\hlopt{$}\hldef{prediction,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{reference} \hldef{=} \hlkwd{factor}\hldef{(pc_compare}\hlopt{$}\hldef{party,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{mode} \hldef{=} \hlsng{"everything"}
+\hldef{)}
+
+\hlkwd{confusionMatrix}\hldef{(}
+  \hlkwc{data} \hldef{=} \hlkwd{factor}\hldef{(gpt55_compare}\hlopt{$}\hldef{prediction,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{reference} \hldef{=} \hlkwd{factor}\hldef{(pc_compare}\hlopt{$}\hldef{party,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{mode} \hldef{=} \hlsng{"everything"}
+\hldef{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+Discuss whether \texttt{gpt-5.5} improves the classification enough to justify using the larger model for this task. Compare performance, confidence, errors, and practical issues such as cost.
+
+\subsection{What to hand in}
+
+Your report should include:
+
+\begin{enumerate}
+\item A short description of your few-shot prompt and how you selected the demonstrations.
+\item The structured output schema used for the model response.
+\item Results from the small pilot run, including any prompt changes you made after inspecting it.
+\item Proper evaluation of your final \texttt{gpt-5.4-mini} classifier using \texttt{confusionMatrix()}.
+\item A comparison between \texttt{gpt-5.4-mini} and \texttt{gpt-5.5} on the same evaluation cases.
+\item A short discussion of what kinds of quotes the model misclassified and whether the larger model was worth using.
+\end{enumerate}
+
+\newpage
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
